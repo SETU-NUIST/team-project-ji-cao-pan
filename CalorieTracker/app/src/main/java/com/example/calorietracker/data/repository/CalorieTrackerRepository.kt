@@ -19,6 +19,7 @@ interface CalorieTrackerRepository {
     suspend fun register(username: String, email: String, password: String): Result<Unit>
     suspend fun signOut()
     suspend fun saveProfile(profile: UserProfile): Result<Unit>
+    suspend fun createCustomFood(food: Food): Result<Food>
     suspend fun addDietRecord(food: Food, grams: Double, mealType: MealType): Result<DietRecord>
     suspend fun getRecord(recordId: String): DietRecord?
 }

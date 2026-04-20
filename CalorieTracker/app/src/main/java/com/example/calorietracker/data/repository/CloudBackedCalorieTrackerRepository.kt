@@ -152,6 +152,24 @@ class CloudBackedCalorieTrackerRepository(
         Unit
     }
 
+    override suspend fun createCustomFood(food: Food): Result<Food> = runFirebaseCall {
+        val currentUser = auth.currentUser ?: error("Please sign in before saving a custom food.")
+        val foodId = food.id.ifBlank { "food_${UUID.randomUUID()}" }
+        val now = System.currentTimeMillis()
+        val savedFood = food.copy(
+            id = foodId,
+            isBaseFood = false,
+            createdBy = currentUser.uid,
+            createdAt = food.createdAt.takeIf { it > 0 } ?: now,
+            updatedAt = now
+        )
+        firestore.collection(FOODS_COLLECTION)
+            .document(foodId)
+            .set(savedFood.toFirestoreMap())
+            .awaitValue()
+        savedFood
+    }
+
     override suspend fun addDietRecord(
         food: Food,
         grams: Double,

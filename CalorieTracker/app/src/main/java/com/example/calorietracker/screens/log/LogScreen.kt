@@ -14,7 +14,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -70,6 +72,26 @@ fun LogScreen(
                 value = uiState.searchQuery,
                 onValueChange = viewModel::updateSearchQuery,
                 placeholder = "Try avocado, yogurt, salmon..."
+            )
+        }
+
+        item {
+            CustomFoodSection(
+                isVisible = uiState.isCustomFoodFormVisible,
+                isSaving = uiState.isSavingCustomFood,
+                name = uiState.customFoodName,
+                caloriesInput = uiState.customCaloriesInput,
+                carbsInput = uiState.customCarbsInput,
+                proteinInput = uiState.customProteinInput,
+                fatInput = uiState.customFatInput,
+                onShow = viewModel::showCustomFoodForm,
+                onHide = viewModel::hideCustomFoodForm,
+                onNameChange = viewModel::updateCustomFoodName,
+                onCaloriesChange = viewModel::updateCustomCaloriesInput,
+                onCarbsChange = viewModel::updateCustomCarbsInput,
+                onProteinChange = viewModel::updateCustomProteinInput,
+                onFatChange = viewModel::updateCustomFatInput,
+                onSave = viewModel::saveCustomFood
             )
         }
 
@@ -163,6 +185,109 @@ fun LogScreen(
 }
 
 @Composable
+private fun CustomFoodSection(
+    isVisible: Boolean,
+    isSaving: Boolean,
+    name: String,
+    caloriesInput: String,
+    carbsInput: String,
+    proteinInput: String,
+    fatInput: String,
+    onShow: () -> Unit,
+    onHide: () -> Unit,
+    onNameChange: (String) -> Unit,
+    onCaloriesChange: (String) -> Unit,
+    onCarbsChange: (String) -> Unit,
+    onProteinChange: (String) -> Unit,
+    onFatChange: (String) -> Unit,
+    onSave: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(28.dp)
+            )
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "Add Custom Food",
+            style = MaterialTheme.typography.titleLarge
+        )
+        Text(
+            text = "Create your own food entry when search results do not have what you need.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        if (!isVisible) {
+            OutlinedButton(
+                onClick = onShow,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(22.dp)
+            ) {
+                Text("Add Custom Food")
+            }
+            return
+        }
+
+        WellnessTextField(
+            label = "Food Name",
+            value = name,
+            onValueChange = onNameChange,
+            placeholder = "Example: Homemade chicken wrap"
+        )
+        WellnessTextField(
+            label = "Calories per 100 g",
+            value = caloriesInput,
+            onValueChange = onCaloriesChange,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+        )
+        WellnessTextField(
+            label = "Carbs per 100 g",
+            value = carbsInput,
+            onValueChange = onCarbsChange,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+        )
+        WellnessTextField(
+            label = "Protein per 100 g",
+            value = proteinInput,
+            onValueChange = onProteinChange,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+        )
+        WellnessTextField(
+            label = "Fat per 100 g",
+            value = fatInput,
+            onValueChange = onFatChange,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            TextButton(
+                onClick = onHide,
+                modifier = Modifier.weight(1f),
+                enabled = !isSaving
+            ) {
+                Text("Cancel")
+            }
+            Button(
+                onClick = onSave,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(22.dp),
+                enabled = !isSaving
+            ) {
+                Text(if (isSaving) "Saving..." else "Save Food")
+            }
+        }
+    }
+}
+
+@Composable
 private fun FoodResultsSection(
     foods: List<Food>,
     selectedFoodId: String?,
@@ -173,7 +298,7 @@ private fun FoodResultsSection(
         if (foods.isEmpty()) {
             EmptyStateCard(
                 title = "No foods available",
-                subtitle = "Your Firestore foods collection is empty. Add food documents in Firebase before logging meals."
+                subtitle = "Add a custom food above, or seed the Firestore foods collection for shared options."
             )
         } else {
             foods.forEach { food ->
@@ -191,7 +316,10 @@ private fun FoodResultsSection(
                     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(food.name, style = MaterialTheme.typography.titleMedium)
                         Text(
-                            text = "${food.caloriesPer100g.toInt()} kcal per 100 g",
+                            text = buildString {
+                                append("${food.caloriesPer100g.toInt()} kcal per 100 g")
+                                if (!food.isBaseFood) append(" • Custom")
+                            },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
